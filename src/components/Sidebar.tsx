@@ -8,9 +8,11 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import type { GenerationSession } from '../types/testCase';
+import { TRANSLATIONS } from '../i18n/translations';
+import type { GenerationSession, Language } from '../types/testCase';
 
 interface SidebarProps {
+  language: Language;
   sessions: GenerationSession[];
   activeSessionId: string | null;
   isCollapsed: boolean;
@@ -21,19 +23,21 @@ interface SidebarProps {
   onClearHistory: () => void;
 }
 
-function formatTimestamp(isoString: string): string {
+function formatTimestamp(isoString: string, language: Language): string {
+  const t = TRANSLATIONS[language].sidebar;
   const date = new Date(isoString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
 
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffMins < 1) return t.justNow;
+  if (diffMins < 60) return t.minutesAgo(diffMins);
 
   const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffHours < 24) return t.hoursAgo(diffHours);
 
-  return date.toLocaleDateString(undefined, {
+  const locale = language === 'id' ? 'id-ID' : 'en-US';
+  return date.toLocaleDateString(locale, {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -42,6 +46,7 @@ function formatTimestamp(isoString: string): string {
 }
 
 export function Sidebar({
+  language,
   sessions,
   activeSessionId,
   isCollapsed,
@@ -51,6 +56,8 @@ export function Sidebar({
   onSelectSession,
   onClearHistory,
 }: SidebarProps) {
+  const t = TRANSLATIONS[language];
+
   const sidebarBody = (
     <div className="flex h-full flex-col bg-slate-900 text-slate-200 select-none">
       {/* Sidebar Header */}
@@ -62,10 +69,10 @@ export function Sidebar({
             </div>
             <div className="min-w-0">
               <h2 className="truncate text-sm font-semibold text-white">
-                History &amp; Saved Tests
+                {t.sidebar.title}
               </h2>
               <p className="text-[11px] text-slate-400">
-                {sessions.length} {sessions.length === 1 ? 'session' : 'sessions'} saved
+                {t.sidebar.sessionsSaved(sessions.length)}
               </p>
             </div>
           </div>
@@ -75,7 +82,7 @@ export function Sidebar({
         <button
           type="button"
           onClick={onToggleCollapse}
-          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={isCollapsed ? t.sidebar.expandTooltip : t.sidebar.collapseTooltip}
           className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-800 hover:text-white lg:flex"
         >
           {isCollapsed ? (
@@ -128,9 +135,11 @@ export function Sidebar({
             <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-slate-800/80 text-slate-500">
               <Clock className="h-5 w-5" />
             </div>
-            <p className="text-sm font-medium text-slate-300">No saved runs yet</p>
+            <p className="text-sm font-medium text-slate-300">
+              {t.sidebar.emptyTitle}
+            </p>
             <p className="mt-1 text-xs leading-relaxed text-slate-500">
-              Generated test suites are automatically saved locally for quick access.
+              {t.sidebar.emptyDescription}
             </p>
           </div>
         ) : (
@@ -177,14 +186,14 @@ export function Sidebar({
                           ) : (
                             <Table2 className="h-2.5 w-2.5" />
                           )}
-                          {session.testCases.length} cases
+                          {t.sidebar.casesCount(session.testCases.length)}
                         </span>
                         <span className="rounded-md bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-400">
-                          {session.testingType}
+                          {t.testingTypes[session.testingType]}
                         </span>
                       </div>
                       <span className="shrink-0 text-[10px] text-slate-500">
-                        {formatTimestamp(session.createdAt)}
+                        {formatTimestamp(session.createdAt, language)}
                       </span>
                     </div>
                   </button>
@@ -205,7 +214,7 @@ export function Sidebar({
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700/80 bg-slate-800/60 px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-slate-700/80 disabled:hover:bg-slate-800/60 disabled:hover:text-slate-300"
           >
             <Trash2 className="h-3.5 w-3.5" />
-            Clear History
+            {t.sidebar.clearHistory}
           </button>
         </div>
       )}

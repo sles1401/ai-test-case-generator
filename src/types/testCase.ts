@@ -1,3 +1,5 @@
+export type Language = 'en' | 'id';
+
 export type TestingType = 'All Types' | 'Positive' | 'Negative' | 'Boundary' | 'Security';
 
 export type SpecificTestType = Exclude<TestingType, 'All Types'>;
@@ -25,6 +27,7 @@ export interface GenerationSession {
   requirement: string;
   testingType: TestingType;
   outputFormat: OutputFormat;
+  language?: Language;
   testCases: TestCase[];
   featureTitle: string;
   createdAt: string;

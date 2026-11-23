@@ -1,4 +1,4 @@
-import type { SpecificTestType, TestCase, TestingType } from '../types/testCase';
+import type { Language, SpecificTestType, TestCase, TestingType } from '../types/testCase';
 
 interface DomainDetection {
   domain: 'auth' | 'ecommerce' | 'search' | 'upload' | 'api' | 'generic';
@@ -6,54 +6,66 @@ interface DomainDetection {
   subject: string;
 }
 
-function detectDomain(rawInput: string): DomainDetection {
+function detectDomain(rawInput: string, language: Language): DomainDetection {
   const text = rawInput.toLowerCase();
 
   if (
-    /\b(login|log in|sign in|signin|auth|authentication|password|mfa|2fa|otp|sso|oauth|forgot password|reset password|session)\b/.test(
+    /\b(login|log in|sign in|signin|auth|authentication|password|mfa|2fa|otp|sso|oauth|forgot password|reset password|session|masuk|kata sandi|autentikasi|ingat saya|terkunci)\b/.test(
       text
     )
   ) {
     return {
       domain: 'auth',
-      featureTitle: 'User Authentication & Access Control',
-      subject: 'user authentication',
+      featureTitle:
+        language === 'id'
+          ? 'Autentikasi Pengguna & Kontrol Akses'
+          : 'User Authentication & Access Control',
+      subject: language === 'id' ? 'autentikasi pengguna' : 'user authentication',
     };
   }
 
   if (
-    /\b(cart|checkout|payment|stripe|paypal|credit card|order|promo|coupon|discount|shipping|billing|refund|ecommerce)\b/.test(
+    /\b(cart|checkout|payment|stripe|paypal|credit card|order|promo|coupon|discount|shipping|billing|refund|ecommerce|keranjang|pembayaran|kartu kredit|pesanan|kupon|diskon|stok)\b/.test(
       text
     )
   ) {
     return {
       domain: 'ecommerce',
-      featureTitle: 'E-Commerce Checkout & Order Processing',
-      subject: 'checkout & payment flow',
+      featureTitle:
+        language === 'id'
+          ? 'Checkout E-Commerce & Pemrosesan Pesanan'
+          : 'E-Commerce Checkout & Order Processing',
+      subject: language === 'id' ? 'alur checkout & pembayaran' : 'checkout & payment flow',
     };
   }
 
   if (
-    /\b(search|filter|sort|pagination|autocomplete|facet|query|results|catalog)\b/.test(
+    /\b(search|filter|sort|pagination|autocomplete|facet|query|results|catalog|pencarian|cari|urutkan|paginasi|katalog)\b/.test(
       text
     )
   ) {
     return {
       domain: 'search',
-      featureTitle: 'Search, Filtering & Results Pagination',
-      subject: 'search and filtering',
+      featureTitle:
+        language === 'id'
+          ? 'Pencarian, Penyaringan & Paginasi Hasil'
+          : 'Search, Filtering & Results Pagination',
+      subject: language === 'id' ? 'pencarian dan filter' : 'search and filtering',
     };
   }
 
   if (
-    /\b(upload|file|attachment|import|avatar|image|pdf|csv|drag and drop|document)\b/.test(
+    /\b(upload|file|attachment|import|avatar|image|pdf|csv|drag and drop|document|unggah|berkas|lampiran|dokumen|gambar)\b/.test(
       text
     )
   ) {
     return {
       domain: 'upload',
-      featureTitle: 'File Upload & Document Validation',
-      subject: 'file upload',
+      featureTitle:
+        language === 'id'
+          ? 'Unggah Berkas & Validasi Dokumen'
+          : 'File Upload & Document Validation',
+      subject: language === 'id' ? 'unggah berkas' : 'file upload',
     };
   }
 
@@ -64,32 +76,223 @@ function detectDomain(rawInput: string): DomainDetection {
   ) {
     return {
       domain: 'api',
-      featureTitle: 'API Endpoint & Payload Validation',
-      subject: 'API integration',
+      featureTitle:
+        language === 'id'
+          ? 'Validasi Endpoint API & Payload'
+          : 'API Endpoint & Payload Validation',
+      subject: language === 'id' ? 'integrasi API' : 'API integration',
     };
   }
 
   const cleaned = rawInput
-    .replace(/^(as a|given|when|then|user story:|requirement:|ac:)/i, '')
+    .replace(/^(as a|sebagai|given|when|then|user story:|requirement:|kebutuhan:|ac:)/i, '')
     .trim()
     .split(/[.!?\n]/)[0]
     .trim();
 
+  const fallbackSubject = language === 'id' ? 'alur fitur target' : 'target feature workflow';
   const shortSubject =
     cleaned.length > 5 && cleaned.length <= 60
       ? cleaned
       : cleaned.length > 60
         ? `${cleaned.slice(0, 57).trim()}...`
-        : 'target feature workflow';
+        : fallbackSubject;
 
   return {
     domain: 'generic',
-    featureTitle: 'Feature Functional & Non-Functional Verification',
+    featureTitle:
+      language === 'id'
+        ? 'Verifikasi Fungsional & Non-Fungsional Fitur'
+        : 'Feature Functional & Non-Functional Verification',
     subject: shortSubject,
   };
 }
 
-function buildAuthCases(): TestCase[] {
+function buildAuthCases(lang: Language): TestCase[] {
+  if (lang === 'id') {
+    return [
+      {
+        id: 'TC-001',
+        title: 'Verifikasi login berhasil dengan kredensial valid dan akun aktif',
+        type: 'Positive',
+        preconditions: 'Pengguna memiliki akun terdaftar yang terverifikasi dan berada di halaman Login.',
+        steps: [
+          'Buka halaman login aplikasi.',
+          'Masukkan alamat email terdaftar yang valid pada kolom Email.',
+          'Masukkan kata sandi yang sesuai pada kolom Kata Sandi.',
+          'Klik tombol "Masuk".',
+        ],
+        expectedResult:
+          'Pengguna terautentikasi, menerima token sesi yang valid, dan diarahkan ke dashboard utama dalam 2 detik.',
+        gherkin: {
+          tags: ['@positive', '@smoke', '@auth'],
+          scenario: 'Login berhasil dengan kredensial yang valid',
+          given: [
+            'pengguna memiliki akun terdaftar dan terverifikasi',
+            'pengguna berada di halaman Login',
+          ],
+          when: [
+            'pengguna memasukkan email valid dan kata sandi yang sesuai',
+            'pengguna mengklik tombol "Masuk"',
+          ],
+          then: [
+            'sistem mengautentikasi pengguna dan menerbitkan token sesi',
+            'pengguna diarahkan ke dashboard',
+          ],
+        },
+      },
+      {
+        id: 'TC-002',
+        title: 'Verifikasi opsi "Ingat Saya" mempertahankan sesi setelah browser ditutup',
+        type: 'Positive',
+        preconditions: 'Pengguna berada di halaman Login dengan cookie browser aktif.',
+        steps: [
+          'Masukkan email dan kata sandi yang valid.',
+          'Centang kotak "Ingat Saya".',
+          'Klik "Masuk" dan pastikan dashboard terbuka.',
+          'Tutup tab browser lalu buka kembali URL aplikasi.',
+        ],
+        expectedResult:
+          'Pengguna tetap terautentikasi dan langsung masuk ke dashboard tanpa diminta login ulang.',
+        gherkin: {
+          tags: ['@positive', '@session'],
+          scenario: 'Mempertahankan sesi autentikasi saat Ingat Saya dipilih',
+          given: ['pengguna berada di halaman Login dengan cookie browser aktif'],
+          when: [
+            'pengguna login dengan kredensial valid dan mencentang "Ingat Saya"',
+            'pengguna membuka kembali aplikasi di sesi browser baru',
+          ],
+          then: ['pengguna tetap masuk dan melihat dashboard'],
+        },
+      },
+      {
+        id: 'TC-003',
+        title: 'Verifikasi login gagal dengan kata sandi salah dan menampilkan pesan error umum',
+        type: 'Negative',
+        preconditions: 'Pengguna memiliki akun terdaftar dan berada di halaman Login.',
+        steps: [
+          'Masukkan alamat email terdaftar yang valid.',
+          'Masukkan kata sandi yang salah.',
+          'Klik tombol "Masuk".',
+        ],
+        expectedResult:
+          'Autentikasi ditolak. Pesan error umum ("Email atau kata sandi tidak valid") tampil tanpa membocorkan kolom mana yang salah.',
+        gherkin: {
+          tags: ['@negative', '@auth'],
+          scenario: 'Menolak percobaan login dengan kata sandi salah',
+          given: ['pengguna terdaftar berada di halaman Login'],
+          when: [
+            'pengguna memasukkan email valid dan kata sandi salah',
+            'pengguna mengirimkan formulir login',
+          ],
+          then: [
+            'login ditolak dengan HTTP 401',
+            'UI menampilkan pesan "Email atau kata sandi tidak valid"',
+          ],
+        },
+      },
+      {
+        id: 'TC-004',
+        title: 'Verifikasi error validasi saat mengirim kolom email kosong atau format salah',
+        type: 'Negative',
+        preconditions: 'Pengguna berada di halaman Login.',
+        steps: [
+          'Biarkan kolom Email kosong atau isi dengan "format-email-salah".',
+          'Biarkan kolom Kata Sandi kosong.',
+          'Klik tombol "Masuk".',
+        ],
+        expectedResult:
+          'Pengiriman formulir diblokir di sisi klien dan pesan validasi inline menyoroti kolom Email dan Kata Sandi.',
+        gherkin: {
+          tags: ['@negative', '@validation'],
+          scenario: 'Memblokir pengiriman formulir dengan kredensial kosong atau tidak valid',
+          given: ['pengguna berada di halaman Login'],
+          when: [
+            'pengguna memasukkan email tidak valid "format-email-salah" dan mengosongkan kata sandi',
+            'pengguna mengklik "Masuk"',
+          ],
+          then: [
+            'tidak ada permintaan autentikasi yang dikirim ke server',
+            'pesan validasi inline muncul pada kedua kolom',
+          ],
+        },
+      },
+      {
+        id: 'TC-005',
+        title: 'Verifikasi batas panjang kata sandi (min 8 karakter, maks 128 karakter)',
+        type: 'Boundary',
+        preconditions: 'Pengguna berada di halaman Login atau Pembaruan Kata Sandi.',
+        steps: [
+          'Coba kirim kata sandi 7 karakter (di bawah batas minimum).',
+          'Coba kirim kata sandi 8 karakter (tepat batas minimum).',
+          'Coba kirim kata sandi 128 karakter (tepat batas maksimum).',
+          'Coba kirim kata sandi 129 karakter (melebihi batas maksimum).',
+        ],
+        expectedResult:
+          'Input 7 dan 129 karakter ditolak dengan pesan batas panjang yang jelas; input 8 dan 128 karakter diterima.',
+        gherkin: {
+          tags: ['@boundary', '@validation'],
+          scenario: 'Menerapkan batas panjang minimum dan maksimum kata sandi',
+          given: ['pengguna berada pada formulir autentikasi'],
+          when: ['pengguna menguji kata sandi sepanjang 7, 8, 128, dan 129 karakter'],
+          then: [
+            'kata sandi 8 dan 128 karakter diterima',
+            'kata sandi 7 dan 129 karakter ditolak dengan pesan validasi panjang',
+          ],
+        },
+      },
+      {
+        id: 'TC-006',
+        title: 'Verifikasi penguncian akun dan pembatasan laju setelah 5 kali gagal berturut-turut',
+        type: 'Security',
+        preconditions: 'Akun aktif; proteksi brute-force diaktifkan (batas: 5 percobaan).',
+        steps: [
+          'Kirim kata sandi salah untuk email valid sebanyak 5 kali berturut-turut.',
+          'Amati respons pada percobaan gagal ke-5.',
+          'Coba login ke-6 menggunakan kata sandi yang benar segera setelahnya.',
+        ],
+        expectedResult:
+          'Akun dikunci sementara (atau dibatasi dengan HTTP 429) selama masa tunggu, dan kredensial valid tetap ditolak hingga masa tunggu berakhir.',
+        gherkin: {
+          tags: ['@security', '@brute-force'],
+          scenario: 'Mengunci akun sementara setelah 5 kali gagal login berturut-turut',
+          given: ['akun pengguna aktif dengan kebijakan penguncian 5 percobaan'],
+          when: [
+            '5 percobaan login gagal dikirim berturut-turut',
+            'percobaan login ke-6 dilakukan dengan kredensial valid',
+          ],
+          then: [
+            'sistem mengembalikan HTTP 429 Too Many Requests',
+            'akun tetap terkunci hingga jeda waktu berakhir',
+          ],
+        },
+      },
+      {
+        id: 'TC-007',
+        title: 'Verifikasi perlindungan terhadap payload SQL Injection dan XSS pada input login',
+        type: 'Security',
+        preconditions: 'Aplikasi berjalan dengan sanitasi input dan query berparameter.',
+        steps: [
+          'Masukkan `\' OR \'1\'=\'1` ke kolom Email dan teks acak di Kata Sandi.',
+          'Kirim formulir dan periksa respons.',
+          'Masukkan `<script>alert(1)</script>` di kolom Email lalu kirim.',
+        ],
+        expectedResult:
+          'Payload diperlakukan sebagai string literal, tidak ada skrip yang dieksekusi, tidak ada error database yang bocor, dan login ditolak.',
+        gherkin: {
+          tags: ['@security', '@injection'],
+          scenario: 'Menyaring payload SQLi dan XSS pada kolom login',
+          given: ['pengguna berada di halaman Login'],
+          when: ['pengguna mengirimkan payload SQL injection atau XSS pada input Email'],
+          then: [
+            'input di-escape dengan aman dan ditolak',
+            'tidak ada skrip dieksekusi dan tidak ada stack trace dikembalikan',
+          ],
+        },
+      },
+    ];
+  }
+
   return [
     {
       id: 'TC-001',
@@ -273,7 +476,154 @@ function buildAuthCases(): TestCase[] {
   ];
 }
 
-function buildEcommerceCases(): TestCase[] {
+function buildEcommerceCases(lang: Language): TestCase[] {
+  if (lang === 'id') {
+    return [
+      {
+        id: 'TC-001',
+        title: 'Verifikasi checkout end-to-end dengan kartu pembayaran dan alamat pengiriman valid',
+        type: 'Positive',
+        preconditions: 'Pengguna memiliki minimal 1 produk tersedia di keranjang dan berada di halaman Checkout.',
+        steps: [
+          'Konfirmasi alamat pengiriman dan pilih Pengiriman Reguler.',
+          'Masukkan detail kartu kredit uji yang valid (nomor, kedaluwarsa, CVV).',
+          'Klik "Buat Pesanan".',
+        ],
+        expectedResult:
+          'Pembayaran diotorisasi, nomor konfirmasi pesanan dibuat, keranjang dikosongkan, dan email konfirmasi dikirim.',
+        gherkin: {
+          tags: ['@positive', '@smoke', '@checkout'],
+          scenario: 'Menyelesaikan checkout dengan detail pembayaran dan pengiriman valid',
+          given: [
+            'pengguna memiliki produk tersedia di keranjang belanja',
+            'pengguna berada di halaman Checkout',
+          ],
+          when: [
+            'pengguna memasukkan alamat pengiriman dan kartu pembayaran yang valid',
+            'pengguna mengklik "Buat Pesanan"',
+          ],
+          then: [
+            'pembayaran diproses dengan sukses',
+            'ID konfirmasi pesanan tampil dan keranjang dikosongkan',
+          ],
+        },
+      },
+      {
+        id: 'TC-002',
+        title: 'Verifikasi kode promo valid menghitung ulang subtotal, diskon, dan pajak secara akurat',
+        type: 'Positive',
+        preconditions: 'Subtotal keranjang Rp100.000; kode promo "HEMAT20" (diskon 20%) aktif.',
+        steps: [
+          'Buka panel ringkasan Keranjang.',
+          'Masukkan "HEMAT20" di kolom Kode Promo lalu klik "Terapkan".',
+          'Verifikasi baris diskon dan total terbaru.',
+        ],
+        expectedResult:
+          'Diskon Rp20.000 diterapkan, subtotal menjadi Rp80.000, dan pajak dihitung ulang dari jumlah setelah diskon.',
+        gherkin: {
+          tags: ['@positive', '@pricing'],
+          scenario: 'Menerapkan kode promo persentase yang valid saat checkout',
+          given: ['subtotal keranjang adalah Rp100.000', 'kode promo "HEMAT20" aktif'],
+          when: ['pengguna menerapkan kode promo "HEMAT20"'],
+          then: [
+            'baris diskon Rp20.000 muncul',
+            'total pesanan mencerminkan subtotal setelah diskon ditambah pajak terbaru',
+          ],
+        },
+      },
+      {
+        id: 'TC-003',
+        title: 'Verifikasi kartu pembayaran ditolak mencegah pembuatan pesanan dan menjaga keranjang',
+        type: 'Negative',
+        preconditions: 'Pengguna berada di halaman Checkout dengan produk di keranjang.',
+        steps: [
+          'Masukkan nomor kartu uji yang diketahui ditolak.',
+          'Klik "Buat Pesanan".',
+        ],
+        expectedResult:
+          'Pesan penolakan gateway pembayaran tampil jelas, tidak ada pesanan tersimpan di database, dan isi keranjang tetap utuh.',
+        gherkin: {
+          tags: ['@negative', '@payment'],
+          scenario: 'Menangani kartu kredit yang ditolak dengan baik saat checkout',
+          given: ['pengguna berada di halaman Checkout dengan produk di keranjang'],
+          when: ['pengguna mengirimkan kartu pembayaran yang ditolak'],
+          then: [
+            'UI menampilkan pesan error pembayaran ditolak dengan jelas',
+            'tidak ada pesanan dibuat dan produk di keranjang tetap tersimpan',
+          ],
+        },
+      },
+      {
+        id: 'TC-004',
+        title: 'Verifikasi kode promo kedaluwarsa atau tidak valid mengembalikan pesan error yang tepat',
+        type: 'Negative',
+        preconditions: 'Pengguna berada di halaman Keranjang atau Checkout.',
+        steps: [
+          'Masukkan kode promo kedaluwarsa "EXPIRED2024".',
+          'Klik "Terapkan".',
+        ],
+        expectedResult:
+          'Sistem menolak kode dengan pesan "Kode promo tidak valid atau sudah kedaluwarsa" dan total pesanan tidak berubah.',
+        gherkin: {
+          tags: ['@negative', '@promo'],
+          scenario: 'Menolak kode promo yang sudah kedaluwarsa saat checkout',
+          given: ['pengguna berada di halaman Keranjang'],
+          when: ['pengguna memasukkan kode promo kedaluwarsa "EXPIRED2024" dan klik "Terapkan"'],
+          then: [
+            'pesan error "Kode promo tidak valid atau sudah kedaluwarsa" ditampilkan',
+            'total keranjang tetap tidak berubah',
+          ],
+        },
+      },
+      {
+        id: 'TC-005',
+        title: 'Verifikasi batas kuantitas produk (min: 1, maks: stok tersedia)',
+        type: 'Boundary',
+        preconditions: 'Produk memiliki stok 5 unit; pengguna berada di halaman Keranjang.',
+        steps: [
+          'Coba kurangi kuantitas produk menjadi 0 dengan tombol "-" atau input manual.',
+          'Atur kuantitas menjadi 1 (batas minimum valid).',
+          'Atur kuantitas menjadi 5 (tepat batas stok).',
+          'Coba atur kuantitas menjadi 6 (melebihi stok).',
+        ],
+        expectedResult:
+          'Kuantitas 0 memicu konfirmasi hapus atau reset ke 1; kuantitas 1 dan 5 berhasil; kuantitas 6 dibatasi ke 5 dengan pemberitahuan batas stok.',
+        gherkin: {
+          tags: ['@boundary', '@inventory'],
+          scenario: 'Menerapkan batas minimum dan maksimum stok kuantitas di keranjang',
+          given: ['produk dengan stok 5 unit berada di keranjang pengguna'],
+          when: ['pengguna mencoba mengatur kuantitas 0, 1, 5, dan 6'],
+          then: [
+            'kuantitas 1 dan 5 diterima',
+            'kuantitas 6 diblokir dengan pesan stok tidak mencukupi',
+          ],
+        },
+      },
+      {
+        id: 'TC-006',
+        title: 'Verifikasi integritas harga di sisi server mencegah manipulasi harga dari sisi klien',
+        type: 'Security',
+        preconditions: 'Pengguna memiliki produk seharga Rp50.000 di keranjang.',
+        steps: [
+          'Intersep permintaan API checkout menggunakan proxy atau DevTools.',
+          'Ubah field harga satuan pada payload dari 50000 menjadi 100.',
+          'Teruskan permintaan yang dimodifikasi ke server.',
+        ],
+        expectedResult:
+          'Server mengabaikan harga dari klien, menghitung ulang total dari katalog resmi, atau menolak payload dengan HTTP 400.',
+        gherkin: {
+          tags: ['@security', '@integrity'],
+          scenario: 'Mencegah manipulasi harga dari sisi klien saat checkout',
+          given: ['pengguna memiliki item seharga Rp50.000 di sesi checkout'],
+          when: ['permintaan checkout yang dimanipulasi mengubah harga item menjadi Rp100'],
+          then: [
+            'server menolak harga yang dimanipulasi atau menagih harga resmi Rp50.000',
+          ],
+        },
+      },
+    ];
+  }
+
   return [
     {
       id: 'TC-001',
@@ -420,7 +770,115 @@ function buildEcommerceCases(): TestCase[] {
   ];
 }
 
-function buildSearchCases(): TestCase[] {
+function buildSearchCases(lang: Language): TestCase[] {
+  if (lang === 'id') {
+    return [
+      {
+        id: 'TC-001',
+        title: 'Verifikasi pencarian kata kunci tepat dan parsial menampilkan data yang relevan',
+        type: 'Positive',
+        preconditions: 'Database berisi data contoh yang cocok dengan kata kunci pencarian.',
+        steps: [
+          'Fokuskan kursor ke kolom pencarian.',
+          'Ketik kata kunci yang tersedia (misalnya "Wireless") lalu tekan Enter.',
+          'Periksa daftar hasil dan jumlah hasil yang ditampilkan.',
+        ],
+        expectedResult:
+          'Semua item yang cocok ditampilkan sesuai relevansi, dan penghitung total mencerminkan jumlah data yang ditemukan.',
+        gherkin: {
+          tags: ['@positive', '@search'],
+          scenario: 'Mengembalikan hasil relevan untuk kueri kata kunci yang valid',
+          given: ['katalog berisi data yang cocok dengan "Wireless"'],
+          when: ['pengguna mencari "Wireless"'],
+          then: ['data yang cocok ditampilkan beserta jumlah hasil yang akurat'],
+        },
+      },
+      {
+        id: 'TC-002',
+        title: 'Verifikasi kombinasi beberapa filter dan pengurutan memperbarui hasil secara akurat',
+        type: 'Positive',
+        preconditions: 'Pengguna berada di halaman hasil pencarian.',
+        steps: [
+          'Pilih filter kategori dan filter status.',
+          'Ubah urutan menjadi "Terbaru".',
+          'Verifikasi parameter URL dan daftar yang dirender.',
+        ],
+        expectedResult:
+          'Hanya item yang memenuhi semua filter yang ditampilkan berurutan dari terbaru, dan parameter URL mencerminkan filter aktif.',
+        gherkin: {
+          tags: ['@positive', '@filters'],
+          scenario: 'Menerapkan kombinasi filter dan pengurutan pada hasil pencarian',
+          given: ['pengguna sedang melihat hasil pencarian'],
+          when: [
+            'pengguna memilih filter kategori dan status',
+            'pengguna mengurutkan berdasarkan "Terbaru"',
+          ],
+          then: ['hasil cocok dengan seluruh kriteria dalam urutan kronologis menurun'],
+        },
+      },
+      {
+        id: 'TC-003',
+        title: 'Verifikasi tampilan kosong muncul saat kueri pencarian tidak menemukan data',
+        type: 'Negative',
+        preconditions: 'Pengguna berada di halaman pencarian.',
+        steps: [
+          'Masukkan string acak yang tidak ada "zzxxccvv9988" ke kolom pencarian.',
+          'Jalankan pencarian dan amati area hasil.',
+        ],
+        expectedResult:
+          'Pesan kondisi kosong yang informatif ("Hasil tidak ditemukan") tampil bersama tombol "Reset Filter".',
+        gherkin: {
+          tags: ['@negative', '@empty-state'],
+          scenario: 'Menampilkan kondisi kosong saat tidak ada data yang cocok',
+          given: ['pengguna berada di halaman pencarian'],
+          when: ['pengguna mencari istilah yang tidak cocok "zzxxccvv9988"'],
+          then: ['pesan kondisi kosong dan tombol "Reset Filter" ditampilkan'],
+        },
+      },
+      {
+        id: 'TC-004',
+        title: 'Verifikasi batas panjang input pencarian dan kondisi batas paginasi',
+        type: 'Boundary',
+        preconditions: 'Dataset berisi 25 data; ukuran halaman adalah 10.',
+        steps: [
+          'Uji kueri 1 karakter dan kueri 256 karakter.',
+          'Navigasi ke Halaman 1, Halaman 3 (halaman terakhir dengan 5 item), dan coba Halaman 4.',
+        ],
+        expectedResult:
+          'Kueri panjang ditangani dengan aman; Halaman 3 menampilkan 5 item dengan tombol "Berikutnya" nonaktif; Halaman 4 ditangani tanpa error.',
+        gherkin: {
+          tags: ['@boundary', '@pagination'],
+          scenario: 'Menangani batas panjang kueri dan batas halaman paginasi',
+          given: ['dataset memiliki 25 item dengan ukuran halaman 10'],
+          when: ['pengguna membuka halaman 3 dan meminta halaman 4'],
+          then: [
+            'halaman 3 menampilkan 5 item dengan tombol Berikutnya nonaktif',
+            'halaman 4 yang tidak valid tidak menyebabkan UI crash',
+          ],
+        },
+      },
+      {
+        id: 'TC-005',
+        title: 'Verifikasi karakter khusus dan injeksi SQL/HTML pada kueri pencarian dinetralkan',
+        type: 'Security',
+        preconditions: 'Pengguna berada di halaman pencarian.',
+        steps: [
+          'Cari `<img src=x onerror=alert(1)>` dan `%_; DROP TABLE users;--`.',
+          'Periksa rendering DOM dari istilah pencarian yang ditampilkan ulang.',
+        ],
+        expectedResult:
+          'Istilah pencarian di-escape sebagai HTML aman di UI, diparameterisasi di backend, dan tidak ada eksekusi skrip atau error 500.',
+        gherkin: {
+          tags: ['@security', '@xss'],
+          scenario: 'Menetralkan XSS dan SQL injection pada bilah pencarian',
+          given: ['pengguna berada di halaman pencarian'],
+          when: ['pengguna mengirimkan payload XSS atau wildcard SQL di input pencarian'],
+          then: ['kueri di-escape dengan aman dan tidak ada skrip yang berjalan'],
+        },
+      },
+    ];
+  }
+
   return [
     {
       id: 'TC-001',
@@ -528,7 +986,93 @@ function buildSearchCases(): TestCase[] {
   ];
 }
 
-function buildUploadCases(): TestCase[] {
+function buildUploadCases(lang: Language): TestCase[] {
+  if (lang === 'id') {
+    return [
+      {
+        id: 'TC-001',
+        title: 'Verifikasi unggah berkas valid yang didukung dan sesuai batas ukuran berhasil',
+        type: 'Positive',
+        preconditions: 'Pengguna terautentikasi dan berada di komponen Unggah Berkas.',
+        steps: [
+          'Klik "Pilih Berkas" atau seret dan lepas berkas PDF/PNG berukuran 2MB yang valid.',
+          'Tunggu indikator progres unggah mencapai 100%.',
+          'Verifikasi pratinjau berkas atau baris berkas yang terunggah.',
+        ],
+        expectedResult:
+          'Berkas berhasil diunggah, metadata (nama, ukuran) ditampilkan, dan berkas tersimpan di penyimpanan.',
+        gherkin: {
+          tags: ['@positive', '@upload'],
+          scenario: 'Mengunggah berkas valid sesuai format dan batas ukuran yang diizinkan',
+          given: ['pengguna berada di antarmuka Unggah Berkas'],
+          when: ['pengguna mengunggah berkas PDF 2MB yang valid'],
+          then: ['proses unggah mencapai 100% dan berkas muncul di daftar'],
+        },
+      },
+      {
+        id: 'TC-002',
+        title: 'Verifikasi ekstensi berkas yang tidak didukung ditolak dengan pesan error jelas',
+        type: 'Negative',
+        preconditions: 'Format yang diizinkan adalah PDF, PNG, JPG.',
+        steps: [
+          'Coba unggah berkas `.exe` atau `.bat`.',
+          'Amati umpan balik validasi.',
+        ],
+        expectedResult:
+          'Proses unggah langsung diblokir dengan pesan error eksplisit yang mencantumkan format yang didukung.',
+        gherkin: {
+          tags: ['@negative', '@validation'],
+          scenario: 'Menolak ekstensi berkas eksekusi yang tidak didukung',
+          given: ['hanya unggahan PDF, PNG, dan JPG yang diizinkan'],
+          when: ['pengguna mencoba mengunggah "payload.exe"'],
+          then: ['unggahan ditolak dengan pesan tipe berkas tidak didukung'],
+        },
+      },
+      {
+        id: 'TC-003',
+        title: 'Verifikasi batas ukuran berkas (0 byte, tepat maks 10MB, dan 10,1MB)',
+        type: 'Boundary',
+        preconditions: 'Ukuran maksimum berkas yang diizinkan adalah 10MB.',
+        steps: [
+          'Coba unggah berkas kosong berukuran 0 byte.',
+          'Unggah berkas berukuran tepat 10,0MB.',
+          'Coba unggah berkas berukuran 10,1MB.',
+        ],
+        expectedResult:
+          'Berkas 0 byte dan 10,1MB ditolak dengan pesan validasi ukuran yang jelas; berkas 10,0MB berhasil diunggah.',
+        gherkin: {
+          tags: ['@boundary', '@upload'],
+          scenario: 'Menerapkan batas ukuran berkas 0 byte dan maksimum 10MB',
+          given: ['batas maksimum ukuran unggahan adalah 10MB'],
+          when: ['pengguna mengunggah berkas 0 byte, 10MB, dan 10,1MB'],
+          then: [
+            'berkas 10MB diterima',
+            'berkas 0 byte dan 10,1MB ditolak',
+          ],
+        },
+      },
+      {
+        id: 'TC-004',
+        title: 'Verifikasi pemalsuan MIME-type dan path traversal pada nama berkas diblokir',
+        type: 'Security',
+        preconditions: 'Inspeksi magic-byte sisi server dan sanitasi nama berkas aktif.',
+        steps: [
+          'Ubah nama skrip shell menjadi `avatar.png` lalu coba unggah.',
+          'Unggah berkas bernama `../../etc/passwd.pdf`.',
+        ],
+        expectedResult:
+          'Server menolak berkas palsu berdasarkan magic-byte dan membersihkan karakter path traversal dari nama berkas.',
+        gherkin: {
+          tags: ['@security', '@upload'],
+          scenario: 'Memblokir berkas MIME palsu dan nama berkas path traversal',
+          given: ['validasi magic-byte di sisi server aktif'],
+          when: ['berkas palsu atau nama berkas path-traversal diunggah'],
+          then: ['server menolak konten palsu dan mensterilkan nama berkas'],
+        },
+      },
+    ];
+  }
+
   return [
     {
       id: 'TC-001',
@@ -614,7 +1158,88 @@ function buildUploadCases(): TestCase[] {
   ];
 }
 
-function buildApiCases(): TestCase[] {
+function buildApiCases(lang: Language): TestCase[] {
+  if (lang === 'id') {
+    return [
+      {
+        id: 'TC-001',
+        title: 'Verifikasi permintaan API valid mengembalikan HTTP 200/201 dengan skema JSON sesuai',
+        type: 'Positive',
+        preconditions: 'Token Bearer valid dan payload permintaan yang diperlukan telah disiapkan.',
+        steps: [
+          'Kirim permintaan dengan header Authorization valid dan body JSON sesuai skema.',
+          'Verifikasi kode status HTTP, header respons, dan struktur body JSON.',
+        ],
+        expectedResult:
+          'Endpoint mengembalikan HTTP 200/201 dengan content-type `application/json` dan seluruh field skema wajib.',
+        gherkin: {
+          tags: ['@positive', '@api'],
+          scenario: 'Mengembalikan respons sukses dan skema valid untuk permintaan terotorisasi',
+          given: ['klien memiliki token Bearer yang valid'],
+          when: ['permintaan sesuai skema dikirim ke endpoint API'],
+          then: ['API merespons dengan HTTP 200 dan sesuai dengan skema JSON yang diharapkan'],
+        },
+      },
+      {
+        id: 'TC-002',
+        title: 'Verifikasi field wajib yang hilang mengembalikan HTTP 400 dengan detail error terstruktur',
+        type: 'Negative',
+        preconditions: 'Token Bearer valid tersedia.',
+        steps: [
+          'Hilangkan satu field wajib dari body permintaan JSON.',
+          'Kirim permintaan dan periksa respons error.',
+        ],
+        expectedResult:
+          'API merespons dengan HTTP 400 Bad Request dan objek error terstruktur yang menyebutkan field yang hilang.',
+        gherkin: {
+          tags: ['@negative', '@api', '@validation'],
+          scenario: 'Menolak payload tanpa field wajib dengan HTTP 400',
+          given: ['klien mengirim permintaan API yang terautentikasi'],
+          when: ['field wajib dihilangkan dari payload JSON'],
+          then: ['API mengembalikan HTTP 400 dengan detail validasi per field'],
+        },
+      },
+      {
+        id: 'TC-003',
+        title: 'Verifikasi rate limiting API menerapkan ambang batas dan mengembalikan header Retry-After',
+        type: 'Boundary',
+        preconditions: 'Batas laju dikonfigurasi sebesar 60 permintaan per menit.',
+        steps: [
+          'Kirim 60 permintaan valid dalam 1 menit dan pastikan semuanya berhasil.',
+          'Kirim permintaan ke-61 dalam jendela waktu yang sama.',
+        ],
+        expectedResult:
+          '60 permintaan pertama berhasil; permintaan ke-61 mengembalikan HTTP 429 Too Many Requests dengan header `Retry-After`.',
+        gherkin: {
+          tags: ['@boundary', '@rate-limit'],
+          scenario: 'Menerapkan batas laju API pada 60 permintaan per menit',
+          given: ['batas laju API adalah 60 permintaan per menit'],
+          when: ['klien mengirim 61 permintaan dalam 60 detik'],
+          then: ['permintaan ke-61 menerima HTTP 429 dengan header Retry-After'],
+        },
+      },
+      {
+        id: 'TC-004',
+        title: 'Verifikasi permintaan tanpa autentikasi atau token kedaluwarsa mengembalikan HTTP 401',
+        type: 'Security',
+        preconditions: 'Endpoint mewajibkan autentikasi yang valid.',
+        steps: [
+          'Kirim permintaan tanpa header Authorization.',
+          'Kirim permintaan dengan token JWT yang kedaluwarsa atau dimodifikasi.',
+        ],
+        expectedResult:
+          'Kedua permintaan ditolak dengan HTTP 401 Unauthorized tanpa membocorkan detail internal sensitif.',
+        gherkin: {
+          tags: ['@security', '@auth'],
+          scenario: 'Menolak token Bearer yang hilang atau kedaluwarsa dengan HTTP 401',
+          given: ['endpoint API mewajibkan autentikasi Bearer'],
+          when: ['permintaan dikirim tanpa token atau dengan JWT kedaluwarsa'],
+          then: ['API merespons dengan HTTP 401 Unauthorized'],
+        },
+      },
+    ];
+  }
+
   return [
     {
       id: 'TC-001',
@@ -695,7 +1320,127 @@ function buildApiCases(): TestCase[] {
   ];
 }
 
-function buildGenericCases(subject: string): TestCase[] {
+function buildGenericCases(subject: string, lang: Language): TestCase[] {
+  if (lang === 'id') {
+    return [
+      {
+        id: 'TC-001',
+        title: `Verifikasi penyelesaian alur utama (happy-path) pada ${subject}`,
+        type: 'Positive',
+        preconditions: 'Pengguna terautentikasi dengan izin yang sesuai dan data uji yang valid.',
+        steps: [
+          `Buka halaman atau titik masuk untuk ${subject}.`,
+          'Isi seluruh input valid yang memenuhi kriteria penerimaan.',
+          'Kirim aksi dan amati umpan balik UI serta penyimpanan status.',
+        ],
+        expectedResult:
+          'Aksi selesai tanpa error, konfirmasi keberhasilan tampil jelas, dan status terbaru tetap bertahan setelah halaman dimuat ulang.',
+        gherkin: {
+          tags: ['@positive', '@smoke'],
+          scenario: `Eksekusi berhasil pada ${subject}`,
+          given: [
+            'pengguna terautentikasi dengan izin yang sesuai',
+            `pengguna telah membuka ${subject}`,
+          ],
+          when: ['pengguna mengisi input valid dan mengirimkan aksi'],
+          then: [
+            'sistem memproses permintaan dengan sukses',
+            'pesan konfirmasi tampil dan status tersimpan',
+          ],
+        },
+      },
+      {
+        id: 'TC-002',
+        title: `Verifikasi konsistensi status dan pembaruan UI setelah ${subject}`,
+        type: 'Positive',
+        preconditions: 'Status awal telah dicatat sebelum menjalankan alur kerja.',
+        steps: [
+          `Jalankan ${subject} dengan parameter standar yang valid.`,
+          'Muat ulang browser lalu kembali ke tampilan ringkasan.',
+        ],
+        expectedResult:
+          'Seluruh komponen UI terkait dan data backend mencerminkan status terbaru secara akurat tanpa cache usang.',
+        gherkin: {
+          tags: ['@positive', '@integration'],
+          scenario: `Verifikasi persistensi status setelah ${subject}`,
+          given: ['sistem berada dalam kondisi awal yang diketahui'],
+          when: [`pengguna menyelesaikan ${subject}`, 'pengguna memuat ulang aplikasi'],
+          then: ['status terbaru dirender secara akurat di seluruh tampilan'],
+        },
+      },
+      {
+        id: 'TC-003',
+        title: `Verifikasi pesan validasi saat input wajib untuk ${subject} kosong atau tidak valid`,
+        type: 'Negative',
+        preconditions: `Pengguna telah membuka antarmuka ${subject}.`,
+        steps: [
+          'Kosongkan kolom wajib atau masukkan format data yang tidak didukung.',
+          'Coba kirim atau picu aksi utama.',
+        ],
+        expectedResult:
+          'Pengiriman dicegah, pesan validasi inline yang deskriptif tampil, dan tidak ada data parsial/rusak yang tersimpan.',
+        gherkin: {
+          tags: ['@negative', '@validation'],
+          scenario: `Menolak input tidak valid atau kosong pada ${subject}`,
+          given: [`pengguna berada di layar ${subject}`],
+          when: ['pengguna mengirimkan kolom wajib yang kosong atau salah format'],
+          then: [
+            'pesan validasi inline ditampilkan',
+            'tidak ada status tidak valid yang disimpan',
+          ],
+        },
+      },
+      {
+        id: 'TC-004',
+        title: `Verifikasi batas minimum dan maksimum input/data untuk ${subject}`,
+        type: 'Boundary',
+        preconditions: 'Batas nilai (panjang karakter atau rentang angka min/maks) telah ditentukan.',
+        steps: [
+          'Uji dengan nilai tepat di batas minimum (mis. 1 karakter / batas bawah).',
+          'Uji dengan nilai tepat di batas maksimum.',
+          'Uji dengan nilai di luar batas yang diizinkan (min - 1 dan maks + 1).',
+        ],
+        expectedResult:
+          'Nilai tepat di batas min/maks diterima; nilai di luar batas ditolak dengan panduan yang jelas.',
+        gherkin: {
+          tags: ['@boundary', '@limits'],
+          scenario: `Menerapkan batas nilai pada ${subject}`,
+          given: [`pengguna berinteraksi dengan ${subject}`],
+          when: ['pengguna mengirimkan nilai di batas, di bawah, dan di atas batas yang diizinkan'],
+          then: [
+            'nilai tepat pada batas berhasil diproses',
+            'nilai di luar batas ditolak dengan pesan yang jelas',
+          ],
+        },
+      },
+      {
+        id: 'TC-005',
+        title: `Verifikasi otorisasi dan sanitasi input untuk ${subject}`,
+        type: 'Security',
+        preconditions: 'Kontrol akses berbasis peran (RBAC) dan proteksi XSS/injeksi aktif.',
+        steps: [
+          `Coba akses atau jalankan ${subject} menggunakan akun tanpa izin yang sesuai.`,
+          'Masukkan `<script>alert("xss")</script>` ke kolom teks sebagai pengguna berwenang.',
+        ],
+        expectedResult:
+          'Akses tidak sah mengembalikan HTTP 403 Forbidden; payload skrip disanitasi/di-escape dan tidak pernah dieksekusi.',
+        gherkin: {
+          tags: ['@security', '@rbac'],
+          scenario: `Menerapkan otorisasi dan proteksi XSS pada ${subject}`,
+          given: ['kontrol akses dan sanitasi input diaktifkan'],
+          when: [
+            `pengguna tidak berwenang mencoba ${subject}`,
+            'payload XSS dimasukkan ke kolom teks',
+          ],
+          then: [
+            'permintaan tidak sah menerima HTTP 403',
+            'skrip yang disisipkan dinetralkan dan tidak pernah berjalan',
+          ],
+        },
+      },
+    ];
+  }
+
   return [
     {
       id: 'TC-001',
@@ -818,168 +1563,331 @@ function buildGenericCases(subject: string): TestCase[] {
 function generateSupplementForType(
   type: SpecificTestType,
   subject: string,
-  existingCount: number
+  existingCount: number,
+  lang: Language
 ): TestCase[] {
-  const supplements: Record<SpecificTestType, Omit<TestCase, 'id'>[]> = {
-    Positive: [
-      {
-        title: `Verify accessibility and keyboard-only navigation for ${subject}`,
-        type: 'Positive',
-        preconditions: 'User is navigating using keyboard only (Tab, Enter, Space).',
-        steps: [
-          `Tab through all interactive controls in ${subject}.`,
-          'Trigger the primary action using Enter or Space.',
-        ],
-        expectedResult:
-          'Focus order is logical, focus rings are visible, and the workflow completes cleanly via keyboard.',
-        gherkin: {
-          tags: ['@positive', '@a11y'],
-          scenario: `Complete ${subject} using keyboard navigation`,
-          given: [`the user is on the ${subject} view`],
-          when: ['the user navigates and submits using only keyboard controls'],
-          then: ['all controls are reachable and the workflow succeeds'],
-        },
-      },
-      {
-        title: `Verify concurrent/idempotent execution of ${subject}`,
-        type: 'Positive',
-        preconditions: 'User is on the submission screen.',
-        steps: [
-          'Double-click the primary submit button rapidly.',
-          'Verify network requests and resulting records.',
-        ],
-        expectedResult:
-          'Button enters loading/disabled state after first click, preventing duplicate submissions.',
-        gherkin: {
-          tags: ['@positive', '@idempotency'],
-          scenario: `Prevent duplicate submission during ${subject}`,
-          given: [`the user has filled valid data for ${subject}`],
-          when: ['the user double-clicks the submit button rapidly'],
-          then: ['only a single request is processed and no duplicate record is created'],
-        },
-      },
-    ],
-    Negative: [
-      {
-        title: `Verify graceful error recovery when network/API times out during ${subject}`,
-        type: 'Negative',
-        preconditions: 'Network throttling or offline simulation is enabled.',
-        steps: [
-          `Initiate ${subject} while simulating a 504 Gateway Timeout or offline state.`,
-          'Observe the error banner and retry option.',
-        ],
-        expectedResult:
-          'User sees a non-destructive retryable error message and entered form data is not lost.',
-        gherkin: {
-          tags: ['@negative', '@resilience'],
-          scenario: `Handle network timeout gracefully during ${subject}`,
-          given: ['the backend API is unreachable or timing out'],
-          when: [`the user submits ${subject}`],
-          then: [
-            'a friendly retry message is displayed',
-            'user-entered data remains preserved for retry',
+  const supplements: Record<SpecificTestType, Omit<TestCase, 'id'>[]> =
+    lang === 'id'
+      ? {
+          Positive: [
+            {
+              title: `Verifikasi aksesibilitas dan navigasi khusus keyboard untuk ${subject}`,
+              type: 'Positive',
+              preconditions: 'Pengguna bernavigasi hanya menggunakan keyboard (Tab, Enter, Space).',
+              steps: [
+                `Tekan Tab melewati seluruh kontrol interaktif di ${subject}.`,
+                'Picu aksi utama menggunakan Enter atau Space.',
+              ],
+              expectedResult:
+                'Urutan fokus logis, indikator fokus terlihat jelas, dan alur kerja selesai dengan baik via keyboard.',
+              gherkin: {
+                tags: ['@positive', '@a11y'],
+                scenario: `Menyelesaikan ${subject} dengan navigasi keyboard`,
+                given: [`pengguna berada di tampilan ${subject}`],
+                when: ['pengguna bernavigasi dan mengirim hanya dengan kontrol keyboard'],
+                then: ['seluruh kontrol dapat dijangkau dan alur kerja berhasil'],
+              },
+            },
+            {
+              title: `Verifikasi eksekusi idempoten dan pencegahan klik ganda pada ${subject}`,
+              type: 'Positive',
+              preconditions: 'Pengguna berada di layar pengiriman.',
+              steps: [
+                'Klik ganda tombol kirim utama secara cepat.',
+                'Periksa permintaan jaringan dan data yang terbentuk.',
+              ],
+              expectedResult:
+                'Tombol masuk ke status loading/nonaktif setelah klik pertama, mencegah duplikasi pengiriman.',
+              gherkin: {
+                tags: ['@positive', '@idempotency'],
+                scenario: `Mencegah pengiriman ganda saat ${subject}`,
+                given: [`pengguna telah mengisi data valid untuk ${subject}`],
+                when: ['pengguna mengklik tombol kirim dua kali dengan cepat'],
+                then: ['hanya satu permintaan yang diproses dan tidak ada data duplikat'],
+              },
+            },
           ],
-        },
-      },
-      {
-        title: `Verify duplicate or conflicting state submission is rejected for ${subject}`,
-        type: 'Negative',
-        preconditions: 'A conflicting record already exists in the system.',
-        steps: [
-          `Submit ${subject} with an identifier that already exists.`,
-          'Inspect the server response and UI message.',
-        ],
-        expectedResult:
-          'System returns HTTP 409 Conflict and displays a clear conflict resolution message.',
-        gherkin: {
-          tags: ['@negative', '@conflict'],
-          scenario: `Reject conflicting duplicate data in ${subject}`,
-          given: ['a record with the same unique key already exists'],
-          when: [`the user submits duplicate data for ${subject}`],
-          then: ['the system returns HTTP 409 and explains the conflict'],
-        },
-      },
-    ],
-    Boundary: [
-      {
-        title: `Verify Unicode, emoji, and whitespace-only boundary inputs in ${subject}`,
-        type: 'Boundary',
-        preconditions: 'User is on the input form.',
-        steps: [
-          'Enter whitespace-only strings ("   ") into required fields.',
-          'Enter multi-byte Unicode characters and emojis (e.g., "José 🚀 日本語").',
-        ],
-        expectedResult:
-          'Whitespace-only input is trimmed and rejected as empty; valid Unicode/emojis are stored and rendered without encoding corruption.',
-        gherkin: {
-          tags: ['@boundary', '@i18n'],
-          scenario: `Handle whitespace-only and Unicode inputs in ${subject}`,
-          given: [`the user is on the ${subject} form`],
-          when: ['the user tests whitespace-only and multi-byte Unicode strings'],
-          then: [
-            'whitespace-only inputs are rejected',
-            'Unicode strings are preserved without corruption',
+          Negative: [
+            {
+              title: `Verifikasi pemulihan error saat jaringan/API timeout selama ${subject}`,
+              type: 'Negative',
+              preconditions: 'Simulasi jaringan lambat atau offline diaktifkan.',
+              steps: [
+                `Jalankan ${subject} saat mensimulasikan 504 Gateway Timeout atau kondisi offline.`,
+                'Amati banner error dan opsi coba lagi.',
+              ],
+              expectedResult:
+                'Pengguna melihat pesan error yang dapat dicoba ulang tanpa kehilangan data formulir yang sudah diisi.',
+              gherkin: {
+                tags: ['@negative', '@resilience'],
+                scenario: `Menangani timeout jaringan dengan baik selama ${subject}`,
+                given: ['API backend tidak dapat dijangkau atau mengalami timeout'],
+                when: [`pengguna mengirimkan ${subject}`],
+                then: [
+                  'pesan coba lagi yang ramah ditampilkan',
+                  'data yang diisi pengguna tetap terjaga untuk dicoba ulang',
+                ],
+              },
+            },
+            {
+              title: `Verifikasi pengiriman data duplikat atau konflik ditolak pada ${subject}`,
+              type: 'Negative',
+              preconditions: 'Data dengan kunci unik yang sama sudah ada di sistem.',
+              steps: [
+                `Kirim ${subject} dengan pengenal yang sudah terdaftar.`,
+                'Periksa respons server dan pesan UI.',
+              ],
+              expectedResult:
+                'Sistem mengembalikan HTTP 409 Conflict dan menampilkan pesan resolusi konflik yang jelas.',
+              gherkin: {
+                tags: ['@negative', '@conflict'],
+                scenario: `Menolak data duplikat yang berkonflik pada ${subject}`,
+                given: ['data dengan kunci unik yang sama sudah ada'],
+                when: [`pengguna mengirimkan data duplikat untuk ${subject}`],
+                then: ['sistem mengembalikan HTTP 409 dan menjelaskan konflik'],
+              },
+            },
           ],
-        },
-      },
-      {
-        title: `Verify high-volume payload / maximum list items boundary for ${subject}`,
-        type: 'Boundary',
-        preconditions: 'System supports bulk or multi-item input.',
-        steps: [
-          'Provide the maximum supported number of items/characters in a single operation.',
-          'Verify rendering performance and response time.',
-        ],
-        expectedResult:
-          'System processes the maximum boundary payload within SLA (< 3s) without UI freeze or truncation.',
-        gherkin: {
-          tags: ['@boundary', '@performance'],
-          scenario: `Process maximum allowed payload size for ${subject}`,
-          given: [`the system is ready for ${subject}`],
-          when: ['the user submits the maximum allowed payload size'],
-          then: ['the operation completes within SLA without UI degradation'],
-        },
-      },
-    ],
-    Security: [
-      {
-        title: `Verify CSRF protection and secure HTTP headers on ${subject} endpoints`,
-        type: 'Security',
-        preconditions: 'Application is deployed with CSRF tokens and security headers.',
-        steps: [
-          'Inspect state-changing request headers for anti-CSRF token or SameSite cookie policy.',
-          'Attempt a cross-origin state-changing request without valid CSRF credentials.',
-        ],
-        expectedResult:
-          'Cross-origin request without valid CSRF token is rejected with HTTP 403 Forbidden.',
-        gherkin: {
-          tags: ['@security', '@csrf'],
-          scenario: `Enforce CSRF protection on ${subject}`,
-          given: ['CSRF protection is enabled on state-changing endpoints'],
-          when: ['a cross-origin request is sent without a valid CSRF token'],
-          then: ['the server rejects the request with HTTP 403 Forbidden'],
-        },
-      },
-      {
-        title: `Verify sensitive data is masked in UI, logs, and network responses for ${subject}`,
-        type: 'Security',
-        preconditions: 'Browser DevTools Network tab and application logs are accessible.',
-        steps: [
-          `Execute ${subject} involving sensitive fields (tokens, secrets, PII).`,
-          'Inspect network payloads, localStorage, and console output.',
-        ],
-        expectedResult:
-          'Sensitive fields are masked in UI, never logged to browser console, and transmitted only over TLS.',
-        gherkin: {
-          tags: ['@security', '@privacy'],
-          scenario: `Prevent sensitive data exposure during ${subject}`,
-          given: [`the user executes ${subject} with sensitive fields`],
-          when: ['network responses and browser storage are inspected'],
-          then: ['no unmasked secrets or PII appear in console logs or client storage'],
-        },
-      },
-    ],
-  };
+          Boundary: [
+            {
+              title: `Verifikasi input spasi saja, karakter Unicode, dan emoji pada ${subject}`,
+              type: 'Boundary',
+              preconditions: 'Pengguna berada di formulir input.',
+              steps: [
+                'Masukkan string spasi saja ("   ") ke kolom wajib.',
+                'Masukkan karakter Unicode multi-byte dan emoji (mis. "José 🚀 日本語").',
+              ],
+              expectedResult:
+                'Input spasi saja dipangkas dan ditolak sebagai kosong; Unicode/emoji valid disimpan dan tampil tanpa rusak.',
+              gherkin: {
+                tags: ['@boundary', '@i18n'],
+                scenario: `Menangani input spasi saja dan Unicode pada ${subject}`,
+                given: [`pengguna berada di formulir ${subject}`],
+                when: ['pengguna menguji string spasi saja dan Unicode multi-byte'],
+                then: [
+                  'input spasi saja ditolak',
+                  'string Unicode terjaga tanpa kerusakan encoding',
+                ],
+              },
+            },
+            {
+              title: `Verifikasi batas payload volume tinggi / jumlah item maksimum untuk ${subject}`,
+              type: 'Boundary',
+              preconditions: 'Sistem mendukung input massal atau banyak item.',
+              steps: [
+                'Berikan jumlah item/karakter maksimum yang didukung dalam satu operasi.',
+                'Verifikasi performa rendering dan waktu respons.',
+              ],
+              expectedResult:
+                'Sistem memproses payload batas maksimum sesuai SLA (< 3 detik) tanpa UI macet atau terpotong.',
+              gherkin: {
+                tags: ['@boundary', '@performance'],
+                scenario: `Memproses ukuran payload maksimum untuk ${subject}`,
+                given: [`sistem siap untuk ${subject}`],
+                when: ['pengguna mengirimkan ukuran payload maksimum yang diizinkan'],
+                then: ['operasi selesai sesuai SLA tanpa penurunan performa UI'],
+              },
+            },
+          ],
+          Security: [
+            {
+              title: `Verifikasi proteksi CSRF dan header keamanan HTTP pada endpoint ${subject}`,
+              type: 'Security',
+              preconditions: 'Aplikasi berjalan dengan token CSRF dan header keamanan.',
+              steps: [
+                'Periksa header permintaan pengubah status untuk token anti-CSRF atau kebijakan cookie SameSite.',
+                'Coba kirim permintaan lintas-asal tanpa kredensial CSRF yang valid.',
+              ],
+              expectedResult:
+                'Permintaan lintas-asal tanpa token CSRF yang valid ditolak dengan HTTP 403 Forbidden.',
+              gherkin: {
+                tags: ['@security', '@csrf'],
+                scenario: `Menerapkan proteksi CSRF pada ${subject}`,
+                given: ['proteksi CSRF aktif pada endpoint pengubah status'],
+                when: ['permintaan lintas-asal dikirim tanpa token CSRF valid'],
+                then: ['server menolak permintaan dengan HTTP 403 Forbidden'],
+              },
+            },
+            {
+              title: `Verifikasi data sensitif disamarkan di UI, log, dan respons jaringan untuk ${subject}`,
+              type: 'Security',
+              preconditions: 'Tab Network DevTools dan log aplikasi dapat diperiksa.',
+              steps: [
+                `Jalankan ${subject} yang melibatkan kolom sensitif (token, rahasia, PII).`,
+                'Periksa payload jaringan, localStorage, dan output console.',
+              ],
+              expectedResult:
+                'Kolom sensitif disamarkan di UI, tidak pernah dicatat ke console browser, dan hanya dikirim melalui TLS.',
+              gherkin: {
+                tags: ['@security', '@privacy'],
+                scenario: `Mencegah paparan data sensitif selama ${subject}`,
+                given: [`pengguna menjalankan ${subject} dengan kolom sensitif`],
+                when: ['respons jaringan dan penyimpanan browser diperiksa'],
+                then: ['tidak ada rahasia atau PII terbuka di log console atau penyimpanan klien'],
+              },
+            },
+          ],
+        }
+      : {
+          Positive: [
+            {
+              title: `Verify accessibility and keyboard-only navigation for ${subject}`,
+              type: 'Positive',
+              preconditions: 'User is navigating using keyboard only (Tab, Enter, Space).',
+              steps: [
+                `Tab through all interactive controls in ${subject}.`,
+                'Trigger the primary action using Enter or Space.',
+              ],
+              expectedResult:
+                'Focus order is logical, focus rings are visible, and the workflow completes cleanly via keyboard.',
+              gherkin: {
+                tags: ['@positive', '@a11y'],
+                scenario: `Complete ${subject} using keyboard navigation`,
+                given: [`the user is on the ${subject} view`],
+                when: ['the user navigates and submits using only keyboard controls'],
+                then: ['all controls are reachable and the workflow succeeds'],
+              },
+            },
+            {
+              title: `Verify concurrent/idempotent execution of ${subject}`,
+              type: 'Positive',
+              preconditions: 'User is on the submission screen.',
+              steps: [
+                'Double-click the primary submit button rapidly.',
+                'Verify network requests and resulting records.',
+              ],
+              expectedResult:
+                'Button enters loading/disabled state after first click, preventing duplicate submissions.',
+              gherkin: {
+                tags: ['@positive', '@idempotency'],
+                scenario: `Prevent duplicate submission during ${subject}`,
+                given: [`the user has filled valid data for ${subject}`],
+                when: ['the user double-clicks the submit button rapidly'],
+                then: ['only a single request is processed and no duplicate record is created'],
+              },
+            },
+          ],
+          Negative: [
+            {
+              title: `Verify graceful error recovery when network/API times out during ${subject}`,
+              type: 'Negative',
+              preconditions: 'Network throttling or offline simulation is enabled.',
+              steps: [
+                `Initiate ${subject} while simulating a 504 Gateway Timeout or offline state.`,
+                'Observe the error banner and retry option.',
+              ],
+              expectedResult:
+                'User sees a non-destructive retryable error message and entered form data is not lost.',
+              gherkin: {
+                tags: ['@negative', '@resilience'],
+                scenario: `Handle network timeout gracefully during ${subject}`,
+                given: ['the backend API is unreachable or timing out'],
+                when: [`the user submits ${subject}`],
+                then: [
+                  'a friendly retry message is displayed',
+                  'user-entered data remains preserved for retry',
+                ],
+              },
+            },
+            {
+              title: `Verify duplicate or conflicting state submission is rejected for ${subject}`,
+              type: 'Negative',
+              preconditions: 'A conflicting record already exists in the system.',
+              steps: [
+                `Submit ${subject} with an identifier that already exists.`,
+                'Inspect the server response and UI message.',
+              ],
+              expectedResult:
+                'System returns HTTP 409 Conflict and displays a clear conflict resolution message.',
+              gherkin: {
+                tags: ['@negative', '@conflict'],
+                scenario: `Reject conflicting duplicate data in ${subject}`,
+                given: ['a record with the same unique key already exists'],
+                when: [`the user submits duplicate data for ${subject}`],
+                then: ['the system returns HTTP 409 and explains the conflict'],
+              },
+            },
+          ],
+          Boundary: [
+            {
+              title: `Verify Unicode, emoji, and whitespace-only boundary inputs in ${subject}`,
+              type: 'Boundary',
+              preconditions: 'User is on the input form.',
+              steps: [
+                'Enter whitespace-only strings ("   ") into required fields.',
+                'Enter multi-byte Unicode characters and emojis (e.g., "José 🚀 日本語").',
+              ],
+              expectedResult:
+                'Whitespace-only input is trimmed and rejected as empty; valid Unicode/emojis are stored and rendered without encoding corruption.',
+              gherkin: {
+                tags: ['@boundary', '@i18n'],
+                scenario: `Handle whitespace-only and Unicode inputs in ${subject}`,
+                given: [`the user is on the ${subject} form`],
+                when: ['the user tests whitespace-only and multi-byte Unicode strings'],
+                then: [
+                  'whitespace-only inputs are rejected',
+                  'Unicode strings are preserved without corruption',
+                ],
+              },
+            },
+            {
+              title: `Verify high-volume payload / maximum list items boundary for ${subject}`,
+              type: 'Boundary',
+              preconditions: 'System supports bulk or multi-item input.',
+              steps: [
+                'Provide the maximum supported number of items/characters in a single operation.',
+                'Verify rendering performance and response time.',
+              ],
+              expectedResult:
+                'System processes the maximum boundary payload within SLA (< 3s) without UI freeze or truncation.',
+              gherkin: {
+                tags: ['@boundary', '@performance'],
+                scenario: `Process maximum allowed payload size for ${subject}`,
+                given: [`the system is ready for ${subject}`],
+                when: ['the user submits the maximum allowed payload size'],
+                then: ['the operation completes within SLA without UI degradation'],
+              },
+            },
+          ],
+          Security: [
+            {
+              title: `Verify CSRF protection and secure HTTP headers on ${subject} endpoints`,
+              type: 'Security',
+              preconditions: 'Application is deployed with CSRF tokens and security headers.',
+              steps: [
+                'Inspect state-changing request headers for anti-CSRF token or SameSite cookie policy.',
+                'Attempt a cross-origin state-changing request without valid CSRF credentials.',
+              ],
+              expectedResult:
+                'Cross-origin request without valid CSRF token is rejected with HTTP 403 Forbidden.',
+              gherkin: {
+                tags: ['@security', '@csrf'],
+                scenario: `Enforce CSRF protection on ${subject}`,
+                given: ['CSRF protection is enabled on state-changing endpoints'],
+                when: ['a cross-origin request is sent without a valid CSRF token'],
+                then: ['the server rejects the request with HTTP 403 Forbidden'],
+              },
+            },
+            {
+              title: `Verify sensitive data is masked in UI, logs, and network responses for ${subject}`,
+              type: 'Security',
+              preconditions: 'Browser DevTools Network tab and application logs are accessible.',
+              steps: [
+                `Execute ${subject} involving sensitive fields (tokens, secrets, PII).`,
+                'Inspect network payloads, localStorage, and console output.',
+              ],
+              expectedResult:
+                'Sensitive fields are masked in UI, never logged to browser console, and transmitted only over TLS.',
+              gherkin: {
+                tags: ['@security', '@privacy'],
+                scenario: `Prevent sensitive data exposure during ${subject}`,
+                given: [`the user executes ${subject} with sensitive fields`],
+                when: ['network responses and browser storage are inspected'],
+                then: ['no unmasked secrets or PII appear in console logs or client storage'],
+              },
+            },
+          ],
+        };
 
   return supplements[type].map((item, idx) => ({
     ...item,
@@ -989,29 +1897,30 @@ function generateSupplementForType(
 
 export function generateMockTestCases(
   requirementInput: string,
-  testingType: TestingType
+  testingType: TestingType,
+  language: Language = 'en'
 ): { featureTitle: string; testCases: TestCase[] } {
-  const detection = detectDomain(requirementInput);
+  const detection = detectDomain(requirementInput, language);
 
   let pool: TestCase[];
   switch (detection.domain) {
     case 'auth':
-      pool = buildAuthCases();
+      pool = buildAuthCases(language);
       break;
     case 'ecommerce':
-      pool = buildEcommerceCases();
+      pool = buildEcommerceCases(language);
       break;
     case 'search':
-      pool = buildSearchCases();
+      pool = buildSearchCases(language);
       break;
     case 'upload':
-      pool = buildUploadCases();
+      pool = buildUploadCases(language);
       break;
     case 'api':
-      pool = buildApiCases();
+      pool = buildApiCases(language);
       break;
     default:
-      pool = buildGenericCases(detection.subject);
+      pool = buildGenericCases(detection.subject, language);
       break;
   }
 
@@ -1024,7 +1933,8 @@ export function generateMockTestCases(
       const needed = generateSupplementForType(
         testingType,
         detection.subject,
-        filtered.length
+        filtered.length,
+        language
       );
       filtered = [...filtered, ...needed].slice(0, 4);
     }

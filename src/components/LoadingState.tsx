@@ -1,20 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Sparkles } from 'lucide-react';
+import { TRANSLATIONS } from '../i18n/translations';
+import type { Language } from '../types/testCase';
 
-const LOADING_MESSAGES = [
-  'Analyzing requirements...',
-  'Identifying edge cases & risk areas...',
-  'Drafting test scenarios...',
-  'Structuring test steps & assertions...',
-];
+interface LoadingStateProps {
+  language: Language;
+}
 
-export function LoadingState() {
+export function LoadingState({ language }: LoadingStateProps) {
+  const messages = TRANSLATIONS[language].loading.messages;
   const [stepIndex, setStepIndex] = useState(0);
   const [progress, setProgress] = useState(18);
 
   useEffect(() => {
     const messageTimer = setInterval(() => {
-      setStepIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+      setStepIndex((prev) => (prev + 1) % messages.length);
     }, 450);
 
     const progressTimer = setInterval(() => {
@@ -28,7 +28,7 @@ export function LoadingState() {
       clearInterval(messageTimer);
       clearInterval(progressTimer);
     };
-  }, []);
+  }, [messages.length]);
 
   return (
     <section
@@ -43,7 +43,7 @@ export function LoadingState() {
               <Sparkles className="h-4 w-4 animate-pulse" />
             </div>
             <span className="text-sm font-semibold text-slate-800 transition-opacity duration-200">
-              {LOADING_MESSAGES[stepIndex]}
+              {messages[stepIndex]}
             </span>
           </div>
           <span className="font-mono text-xs font-medium text-indigo-600">

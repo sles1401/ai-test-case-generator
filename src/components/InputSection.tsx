@@ -1,7 +1,9 @@
 import { Eraser, FileText, Layers, ShieldCheck, Sparkles } from 'lucide-react';
-import type { OutputFormat, TestingType } from '../types/testCase';
+import { TRANSLATIONS } from '../i18n/translations';
+import type { Language, OutputFormat, TestingType } from '../types/testCase';
 
 interface InputSectionProps {
+  language: Language;
   requirement: string;
   testingType: TestingType;
   outputFormat: OutputFormat;
@@ -12,21 +14,6 @@ interface InputSectionProps {
   onClearInput: () => void;
   onGenerate: () => void;
 }
-
-const EXAMPLE_PROMPTS = [
-  {
-    label: 'Login & Auth',
-    text: 'As a registered user, I want to log in using my email and password with an optional "Remember Me" toggle, so that I can securely access my dashboard. Account should lock after 5 failed attempts.',
-  },
-  {
-    label: 'Checkout & Promo',
-    text: 'As a shopper, I want to apply a promo code and complete checkout with a credit card, so that my order is confirmed and inventory is updated. Declined cards must preserve the cart.',
-  },
-  {
-    label: 'File Upload',
-    text: 'As a user, I want to upload PDF or PNG documents up to 10MB via drag-and-drop, so that my verification documents are attached to my profile.',
-  },
-];
 
 const TESTING_TYPES: TestingType[] = [
   'All Types',
@@ -39,6 +26,7 @@ const TESTING_TYPES: TestingType[] = [
 const OUTPUT_FORMATS: OutputFormat[] = ['Standard Table', 'BDD Gherkin Syntax'];
 
 export function InputSection({
+  language,
   requirement,
   testingType,
   outputFormat,
@@ -49,6 +37,8 @@ export function InputSection({
   onClearInput,
   onGenerate,
 }: InputSectionProps) {
+  const t = TRANSLATIONS[language];
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       e.preventDefault();
@@ -71,11 +61,9 @@ export function InputSection({
               htmlFor="requirements-input"
               className="block text-sm font-semibold text-slate-900"
             >
-              Requirements / User Story / Acceptance Criteria
+              {t.input.label}
             </label>
-            <p className="text-xs text-slate-500">
-              Paste your Jira story, PRD snippet, or acceptance criteria below.
-            </p>
+            <p className="text-xs text-slate-500">{t.input.helper}</p>
           </div>
         </div>
 
@@ -86,7 +74,7 @@ export function InputSection({
           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-45"
         >
           <Eraser className="h-3.5 w-3.5" />
-          Clear Input
+          {t.input.clearInput}
         </button>
       </div>
 
@@ -99,13 +87,15 @@ export function InputSection({
           onChange={(e) => onRequirementChange(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={isGenerating}
-          placeholder={`Example:\nAs a registered user, I want to log in with my email and password so I can access my dashboard.\n- Valid credentials redirect to /dashboard within 2s\n- Invalid password shows a generic error message\n- Account locks for 15 minutes after 5 failed attempts`}
+          placeholder={t.input.placeholder}
           className="w-full resize-y rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
         />
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] font-medium text-slate-400">Try sample:</span>
-            {EXAMPLE_PROMPTS.map((sample) => (
+            <span className="text-[11px] font-medium text-slate-400">
+              {t.input.trySample}
+            </span>
+            {t.input.samples.map((sample) => (
               <button
                 key={sample.label}
                 type="button"
@@ -118,7 +108,15 @@ export function InputSection({
             ))}
           </div>
           <span className="text-[11px] text-slate-400">
-            {requirement.length} chars · <kbd className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[10px] text-slate-500">Ctrl</kbd>+<kbd className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[10px] text-slate-500">Enter</kbd> to generate
+            {t.input.charsLabel(requirement.length)} ·{' '}
+            <kbd className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[10px] text-slate-500">
+              Ctrl
+            </kbd>
+            +
+            <kbd className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[10px] text-slate-500">
+              Enter
+            </kbd>{' '}
+            {t.input.shortcutHint}
           </span>
         </div>
       </div>
@@ -133,7 +131,7 @@ export function InputSection({
               className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-700"
             >
               <ShieldCheck className="h-3.5 w-3.5 text-indigo-600" />
-              Testing Type
+              {t.input.testingTypeLabel}
             </label>
             <select
               id="testing-type"
@@ -144,7 +142,7 @@ export function InputSection({
             >
               {TESTING_TYPES.map((type) => (
                 <option key={type} value={type}>
-                  {type}
+                  {t.testingTypes[type]}
                 </option>
               ))}
             </select>
@@ -157,7 +155,7 @@ export function InputSection({
               className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-700"
             >
               <Layers className="h-3.5 w-3.5 text-indigo-600" />
-              Output Format
+              {t.input.outputFormatLabel}
             </label>
             <select
               id="output-format"
@@ -168,7 +166,7 @@ export function InputSection({
             >
               {OUTPUT_FORMATS.map((format) => (
                 <option key={format} value={format}>
-                  {format}
+                  {t.outputFormats[format]}
                 </option>
               ))}
             </select>
@@ -183,7 +181,7 @@ export function InputSection({
           className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition-all hover:bg-indigo-700 hover:shadow-md hover:shadow-indigo-600/25 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-indigo-300 disabled:shadow-none sm:h-[42px]"
         >
           <Sparkles className={`h-4 w-4 ${isGenerating ? 'animate-spin' : ''}`} />
-          {isGenerating ? 'Generating...' : 'Generate Test Cases'}
+          {isGenerating ? t.input.generatingButton : t.input.generateButton}
         </button>
       </div>
     </section>

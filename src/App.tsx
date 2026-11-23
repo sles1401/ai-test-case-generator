@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Beaker, Menu, Sparkles } from 'lucide-react';
+import { Beaker, Globe, Menu, Sparkles } from 'lucide-react';
 import { InputSection } from './components/InputSection';
 import { LoadingState } from './components/LoadingState';
 import { ResultsSection } from './components/ResultsSection';
 import { Sidebar } from './components/Sidebar';
+import { TRANSLATIONS } from './i18n/translations';
 import type {
   GenerationSession,
+  Language,
   OutputFormat,
   TestCase,
   TestingType,
@@ -13,6 +15,7 @@ import type {
 import { generateMockTestCases } from './utils/testCaseGenerator';
 
 const STORAGE_KEY = 'testcase_generator_history_v1';
+const LANG_STORAGE_KEY = 'testcase_generator_lang_v1';
 
 function loadSavedSessions(): GenerationSession[] {
   try {
@@ -25,7 +28,17 @@ function loadSavedSessions(): GenerationSession[] {
   }
 }
 
+function loadSavedLanguage(): Language {
+  try {
+    const saved = localStorage.getItem(LANG_STORAGE_KEY);
+    return saved === 'id' ? 'id' : 'en';
+  } catch {
+    return 'en';
+  }
+}
+
 export function App() {
+  const [language, setLanguage] = useState<Language>(loadSavedLanguage);
   const [sessions, setSessions] = useState<GenerationSession[]>(loadSavedSessions);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
@@ -41,6 +54,8 @@ export function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
+  const t = TRANSLATIONS[language];
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
@@ -48,6 +63,30 @@ export function App() {
       // Ignore storage quota errors
     }
   }, [sessions]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LANG_STORAGE_KEY, language);
+    } catch {
+      // Ignore storage quota errors
+    }
+  }, [language]);
+
+  const handleLanguageChange = (nextLang: Language) => {
+    if (nextLang === language) return;
+    setLanguage(nextLang);
+
+    // If results are currently displayed, re-render them in the newly selected language
+    if (hasGenerated && requirement.trim() && !isGenerating) {
+      const { featureTitle: nextTitle, testCases } = generateMockTestCases(
+        requirement.trim(),
+        testingType,
+        nextLang
+      );
+      setFeatureTitle(nextTitle);
+      setGeneratedCases(testCases);
+    }
+  };
 
   const handleGenerate = () => {
     const trimmed = requirement.trim();
@@ -58,7 +97,8 @@ export function App() {
     setTimeout(() => {
       const { featureTitle: nextTitle, testCases } = generateMockTestCases(
         trimmed,
-        testingType
+        testingType,
+        language
       );
 
       const newSession: GenerationSession = {
@@ -69,6 +109,7 @@ export function App() {
         requirement: trimmed,
         testingType,
         outputFormat,
+        language,
         testCases,
         featureTitle: nextTitle,
         createdAt: new Date().toISOString(),
@@ -92,6 +133,9 @@ export function App() {
     setRequirement(session.requirement);
     setTestingType(session.testingType);
     setOutputFormat(session.outputFormat);
+    if (session.language) {
+      setLanguage(session.language);
+    }
     setFeatureTitle(session.featureTitle);
     setGeneratedCases(session.testCases);
     setHasGenerated(true);
@@ -108,6 +152,7 @@ export function App() {
     <div className="flex h-screen w-full overflow-hidden bg-slate-50 text-slate-900">
       {/* Left Collapsible Sidebar */}
       <Sidebar
+        language={language}
         sessions={sessions}
         activeSessionId={activeSessionId}
         isCollapsed={isSidebarCollapsed}
@@ -139,24 +184,54 @@ export function App() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-base font-bold tracking-tight text-slate-900 sm:text-lg">
-                    AI Test Case Generator
+                    {t.appTitle}
                   </h1>
                   <span className="hidden rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-indigo-700 uppercase ring-1 ring-indigo-600/15 sm:inline-flex">
-                    QA Studio
+                    {t.appBadge}
                   </span>
                 </div>
                 <p className="hidden text-xs text-slate-500 sm:block">
-                  Transform user stories &amp; acceptance criteria into structured QA test suites
+                  {t.appSubtitle}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+          <div className="flex items-center gap-2.5">
+            {/* Bilingual Switcher (EN / ID) */}
+            <div
+              role="group"
+              aria-label="Language switcher"
+              className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5"
+            >
+              <Globe className="mr-1 ml-2 h-3.5 w-3.5 text-slate-400" />
+              <button
+                type="button"
+                onClick={() => handleLanguageChange('en')}
+                className={`rounded-md px-2 py-1 text-xs font-semibold transition-all ${
+                  language === 'en'
+                    ? 'bg-white text-indigo-600 shadow-2xs ring-1 ring-slate-200/80'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                onClick={() => handleLanguageChange('id')}
+                className={`rounded-md px-2 py-1 text-xs font-semibold transition-all ${
+                  language === 'id'
+                    ? 'bg-white text-indigo-600 shadow-2xs ring-1 ring-slate-200/80'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                ID
+              </button>
+            </div>
+
+            <span className="hidden items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 md:inline-flex">
               <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
-              <span className="hidden sm:inline">Interactive QA Engine</span>
-              <span className="sm:hidden">Ready</span>
+              {t.engineStatus}
             </span>
           </div>
         </header>
@@ -166,6 +241,7 @@ export function App() {
           <div className="mx-auto max-w-6xl space-y-6">
             {/* Top Main Area: Input Form */}
             <InputSection
+              language={language}
               requirement={requirement}
               testingType={testingType}
               outputFormat={outputFormat}
@@ -179,10 +255,11 @@ export function App() {
 
             {/* Bottom Main Area: Loading State OR Results */}
             {isGenerating ? (
-              <LoadingState />
+              <LoadingState language={language} />
             ) : (
               hasGenerated && (
                 <ResultsSection
+                  language={language}
                   featureTitle={featureTitle}
                   testCases={generatedCases}
                   outputFormat={outputFormat}

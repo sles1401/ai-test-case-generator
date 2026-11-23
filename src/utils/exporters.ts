@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
-import type { OutputFormat, TestCase } from '../types/testCase';
+import { TRANSLATIONS } from '../i18n/translations';
+import type { Language, OutputFormat, TestCase } from '../types/testCase';
 
 export function formatGherkinFeature(featureTitle: string, testCases: TestCase[]): string {
   const lines: string[] = [`Feature: ${featureTitle}`, ''];
@@ -31,22 +32,31 @@ function escapeMarkdownCell(value: string): string {
 export function formatMarkdownDocument(
   featureTitle: string,
   testCases: TestCase[],
-  outputFormat: OutputFormat
+  outputFormat: OutputFormat,
+  language: Language = 'en'
 ): string {
-  const header = `# Test Suite: ${featureTitle}\n\nGenerated: ${new Date().toLocaleString()}\nTotal Scenarios: ${testCases.length}\n\n`;
+  const t = TRANSLATIONS[language];
+  const cols = t.results.columns;
+  const locale = language === 'id' ? 'id-ID' : 'en-US';
+
+  const header =
+    `# ${t.exportMeta.suitePrefix}: ${featureTitle}\n\n` +
+    `${t.exportMeta.generatedLabel}: ${new Date().toLocaleString(locale)}\n` +
+    `${t.exportMeta.totalLabel}: ${testCases.length}\n\n`;
 
   if (outputFormat === 'BDD Gherkin Syntax') {
     return `${header}\`\`\`gherkin\n${formatGherkinFeature(featureTitle, testCases)}\n\`\`\`\n`;
   }
 
   const tableHeader =
-    '| ID | Scenario Title | Type | Pre-conditions | Test Steps | Expected Result |\n' +
+    `| ${cols.id} | ${cols.title} | ${cols.type} | ${cols.preconditions} | ${cols.steps} | ${cols.expectedResult} |\n` +
     '| --- | --- | --- | --- | --- | --- |\n';
 
   const tableRows = testCases
     .map((tc) => {
       const steps = tc.steps.map((s, i) => `${i + 1}. ${s}`).join('<br>');
-      return `| ${escapeMarkdownCell(tc.id)} | ${escapeMarkdownCell(tc.title)} | ${escapeMarkdownCell(tc.type)} | ${escapeMarkdownCell(tc.preconditions)} | ${escapeMarkdownCell(steps)} | ${escapeMarkdownCell(tc.expectedResult)} |`;
+      const localizedType = t.specificTypes[tc.type];
+      return `| ${escapeMarkdownCell(tc.id)} | ${escapeMarkdownCell(tc.title)} | ${escapeMarkdownCell(localizedType)} | ${escapeMarkdownCell(tc.preconditions)} | ${escapeMarkdownCell(steps)} | ${escapeMarkdownCell(tc.expectedResult)} |`;
     })
     .join('\n');
 
@@ -56,12 +66,13 @@ export function formatMarkdownDocument(
 export async function copyTestCasesToClipboard(
   featureTitle: string,
   testCases: TestCase[],
-  outputFormat: OutputFormat
+  outputFormat: OutputFormat,
+  language: Language = 'en'
 ): Promise<void> {
   const content =
     outputFormat === 'BDD Gherkin Syntax'
       ? formatGherkinFeature(featureTitle, testCases)
-      : formatMarkdownDocument(featureTitle, testCases, 'Standard Table');
+      : formatMarkdownDocument(featureTitle, testCases, 'Standard Table', language);
 
   await navigator.clipboard.writeText(content);
 }
@@ -85,20 +96,26 @@ function triggerDownload(blob: Blob, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
-export function exportToCSV(testCases: TestCase[], filename = 'test-cases.csv'): void {
+export function exportToCSV(
+  testCases: TestCase[],
+  language: Language = 'en',
+  filename = 'test-cases.csv'
+): void {
+  const t = TRANSLATIONS[language];
+  const cols = t.results.columns;
   const headers = [
-    'ID',
-    'Scenario Title',
-    'Type',
-    'Pre-conditions',
-    'Test Steps',
-    'Expected Result',
+    cols.id,
+    cols.title,
+    cols.type,
+    cols.preconditions,
+    cols.steps,
+    cols.expectedResult,
   ];
 
   const rows = testCases.map((tc) => [
     escapeCSV(tc.id),
     escapeCSV(tc.title),
-    escapeCSV(tc.type),
+    escapeCSV(t.specificTypes[tc.type]),
     escapeCSV(tc.preconditions),
     escapeCSV(tc.steps.map((s, idx) => `${idx + 1}. ${s}`).join('\n')),
     escapeCSV(tc.expectedResult),
@@ -114,15 +131,19 @@ export function exportToCSV(testCases: TestCase[], filename = 'test-cases.csv'):
 export function exportToExcel(
   featureTitle: string,
   testCases: TestCase[],
+  language: Language = 'en',
   filename = 'test-cases.xlsx'
 ): void {
+  const t = TRANSLATIONS[language];
+  const cols = t.results.columns;
+
   const worksheetData = testCases.map((tc) => ({
-    ID: tc.id,
-    'Scenario Title': tc.title,
-    Type: tc.type,
-    'Pre-conditions': tc.preconditions,
-    'Test Steps': tc.steps.map((s, idx) => `${idx + 1}. ${s}`).join('\n'),
-    'Expected Result': tc.expectedResult,
+    [cols.id]: tc.id,
+    [cols.title]: tc.title,
+    [cols.type]: t.specificTypes[tc.type],
+    [cols.preconditions]: tc.preconditions,
+    [cols.steps]: tc.steps.map((s, idx) => `${idx + 1}. ${s}`).join('\n'),
+    [cols.expectedResult]: tc.expectedResult,
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(worksheetData);
@@ -136,7 +157,8 @@ export function exportToExcel(
   ];
 
   const workbook = XLSX.utils.book_new();
-  const safeSheetName = featureTitle.replace(/[\\/?*[\]]/g, '').slice(0, 31) || 'Test Cases';
+  const safeSheetName =
+    featureTitle.replace(/[\\/?*[\]]/g, '').slice(0, 31) || t.exportMeta.sheetFallback;
   XLSX.utils.book_append_sheet(workbook, worksheet, safeSheetName);
   XLSX.writeFile(workbook, filename);
 }
@@ -145,9 +167,10 @@ export function downloadMarkdown(
   featureTitle: string,
   testCases: TestCase[],
   outputFormat: OutputFormat,
+  language: Language = 'en',
   filename = 'test-cases.md'
 ): void {
-  const content = formatMarkdownDocument(featureTitle, testCases, outputFormat);
+  const content = formatMarkdownDocument(featureTitle, testCases, outputFormat, language);
   const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
   triggerDownload(blob, filename);
 }
